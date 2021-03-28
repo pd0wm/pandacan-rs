@@ -2,7 +2,7 @@ extern crate libusb;
 
 use std::time::Duration;
 use std::thread;
-use panda::Panda;
+use pandacan::Panda;
 
 
 fn main() {

@@ -6,7 +6,7 @@ use clap::{Arg, App};
 
 use std::time::Duration;
 use std::thread;
-use panda::{Panda, SafetyModel};
+use pandacan::{Panda, SafetyModel};
 use std::collections::BTreeMap;
 
 use binascii::bin2hex;
