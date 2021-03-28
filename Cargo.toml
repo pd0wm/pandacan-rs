@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Willem Melching <willem.melching@gmail.com>"]
 license = "MIT"
 edition = "2018"
+description = "Library to send/receive CAN data using a panda OBD dongle. See https://github.com/commaai/panda for more information."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
