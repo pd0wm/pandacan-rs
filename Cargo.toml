@@ -5,8 +5,7 @@ authors = ["Willem Melching <willem.melching@gmail.com>"]
 license = "MIT"
 edition = "2018"
 description = "Library to send/receive CAN data using a panda OBD dongle. See https://github.com/commaai/panda for more information."
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository = "https://github.com/pd0wm/pandacan-rs"
 
 [dependencies]
 libusb = "0.3.0"
