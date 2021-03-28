@@ -1,5 +1,5 @@
 # panda-rs
-<a href="https://crates.io/crates/pandacan" rel="noopener"><img alt="Crates.io" src="https://img.shields.io/crates/v/pandacan?style=flat-square"></a>
+<a href="https://crates.io/crates/pandacan" target="_blank" rel="noopener"><img alt="Crates.io" src="https://img.shields.io/crates/v/pandacan?style=flat-square"></a>
 
 Rust library to communicate with a comma.ai panda.
 
