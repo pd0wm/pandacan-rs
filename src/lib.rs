@@ -1,7 +1,6 @@
 use std::mem;
 use std::time::Duration;
 
-
 extern crate libusb;
 
 #[macro_use]
@@ -65,6 +64,7 @@ enum Endpoint {
     PowerSaving = 0xe7,
     UsbPowerMode = 0xe6,
     Heartbeat = 0xf3,
+    CanRead = 0x81,
 }
 
 #[allow(non_camel_case_types, dead_code)]
@@ -124,6 +124,15 @@ bitflags! {
         const DISABLE_STOCK_AEB = 0x2;
         const RAISE_LONGITUDINAL_LIMITS_TO_MAX = 0x8;
     }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct CanMessage {
+    pub address: u32,
+    pub bus_time: u16,
+    pub src: u8,
+    pub len : usize,
+    pub dat : [u8; 8],
 }
 
 
@@ -219,6 +228,52 @@ impl<'a> Panda<'a>  {
         self.device.read_control(tp, Endpoint::Rtc as u8, 0, 0, &mut buf, self.timeout)?;
 
         Ok(unsafe { std::mem::transmute(buf) })
+    }
+    
+    pub fn can_receive(&self) -> Result<Vec<CanMessage>, libusb::Error> {
+        const N : usize = 0x1000;
+        let mut buf : [u8; N] = [0; N];
+        let recv : usize = self.device.read_bulk(Endpoint::CanRead as u8, &mut buf, self.timeout)?;
+
+        let num_msg : usize = recv / 0x10;
+        let data : [u32; N / 4] = unsafe {std::mem::transmute(buf)};
+
+        let mut r : Vec<CanMessage> = Vec::new();
+        for i in 0..num_msg {
+            let address;
+            if data[i*4] & 4 != 0 {
+                // Extended
+                address = data[i*4] >> 3;
+            } else {
+                // Normal
+                address = data[i*4] >> 21;
+            }
+
+            let bus_time = (data[i*4 + 1] >> 16) as u16;
+            let src = (data[i*4 + 1] >> 4) as u8;
+            let len = (data[i*4 + 1] & 0xF) as usize;
+
+            let dat = [
+                ((data[i*4 + 2] >> 0) & 0xFF) as u8,
+                ((data[i*4 + 2] >> 8) & 0xFF) as u8,
+                ((data[i*4 + 2] >> 16) & 0xFF) as u8,
+                ((data[i*4 + 2] >> 24) & 0xFF) as u8,
+                ((data[i*4 + 3] >> 0) & 0xFF) as u8,
+                ((data[i*4 + 3] >> 8) & 0xFF) as u8,
+                ((data[i*4 + 3] >> 16) & 0xFF) as u8,
+                ((data[i*4 + 3] >> 24) & 0xFF) as u8,
+            ];
+
+            r.push(CanMessage {
+                address,
+                bus_time,
+                dat,
+                len,
+                src,
+            });
+        }
+
+        Ok(r)
     }
 
     fn usb_write(&self, request : Endpoint, value: u16, index : u16) -> Result<(), libusb::Error> {
