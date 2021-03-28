@@ -1,6 +1,5 @@
 use std::mem;
 use std::time::Duration;
-use std::str;
 
 
 extern crate libusb;
@@ -63,6 +62,9 @@ enum Endpoint {
     SafetyModel = 0xdc,
     UnsafeMode = 0xdf,
     Loopback = 0xe5,
+    PowerSaving = 0xe7,
+    UsbPowerMode = 0xe6,
+    Heartbeat = 0xf3,
 }
 
 #[allow(non_camel_case_types, dead_code)]
@@ -104,6 +106,16 @@ pub enum HwType {
   Pedal = 0x4,
   Uno = 0x5,
   Dos = 0x6,
+}
+
+#[allow(non_camel_case_types, dead_code)]
+#[repr(u8)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum UsbPowerMode {
+    None  = 0x0,
+    Client = 0x1,
+    Cdp = 0x2,
+    Dcp = 0x3,
 }
 
 bitflags! {
@@ -148,6 +160,10 @@ impl<'a> Panda<'a>  {
         self.usb_write(Endpoint::SetFanSpeed, fan_speed, 0)
     }
 
+    pub fn get_fan_speed(&self) -> Result<u16, libusb::Error> {
+        self.usb_read_u16(Endpoint::GetFanSpeed, 0, 0)
+    }
+
     pub fn set_ir_pwr(&self, ir_pwr: u16) -> Result<(), libusb::Error> {
         self.usb_write(Endpoint::IrPwr, ir_pwr, 0)
     }
@@ -155,9 +171,17 @@ impl<'a> Panda<'a>  {
     pub fn set_loopback(&self, loopback: bool) -> Result<(), libusb::Error> {
         self.usb_write(Endpoint::Loopback, loopback as u16, 0)
     }
+    
+    pub fn set_power_saving(&self, power_saving: bool) -> Result<(), libusb::Error> {
+        self.usb_write(Endpoint::PowerSaving, power_saving as u16, 0)
+    }
 
-    pub fn get_fan_speed(&self) -> Result<u16, libusb::Error> {
-        self.usb_read_u16(Endpoint::GetFanSpeed, 0, 0)
+    pub fn set_usb_power_mode(&self, power_mode: UsbPowerMode) -> Result<(), libusb::Error> {
+        self.usb_write(Endpoint::UsbPowerMode, power_mode as u16, 0)
+    }
+
+    pub fn send_heartbeat(&self) -> Result<(), libusb::Error> {
+        self.usb_write(Endpoint::Heartbeat, 1, 0)
     }
 
     pub fn get_fw_version(&self) -> Result<[u8; 128], libusb::Error> {
