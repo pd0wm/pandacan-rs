@@ -1,4 +1,6 @@
 # panda-rs
+![Crates.io](https://img.shields.io/crates/v/pandacan)
+
 Rust library to communicate with a comma.ai panda.
 
 ```rust
@@ -23,3 +25,5 @@ loop {
 The examples folder contains a small helper binary to print all traffic on a certain bus:
 
 `cargo run --example can_printer -- --bus=0`
+
+
