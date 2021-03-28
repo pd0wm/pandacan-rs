@@ -65,6 +65,7 @@ enum Endpoint {
     UsbPowerMode = 0xe6,
     Heartbeat = 0xf3,
     CanRead = 0x81,
+    CanWrite = 0x3,
 }
 
 #[allow(non_camel_case_types, dead_code)]
@@ -274,6 +275,35 @@ impl<'a> Panda<'a>  {
         }
 
         Ok(r)
+    }
+
+    pub fn can_send(&self, can_data : Vec<CanMessage>) -> Result<(), libusb::Error> {
+        let mut send: Vec<u32> = Vec::new();
+        send.resize(can_data.len() * 0x10, 0);
+
+        for i in 0..can_data.len() {
+            let msg = can_data[i];
+            if msg.address >= 0x800 {
+                // Extended
+                send[i*4] = ((msg.address as u32) << 3) | 5;
+            } else {
+                // Normal
+                send[i*4] = ((msg.address as u32) << 21) | 1;
+            }
+            send[i*4+1] = (msg.len as u32) | ((msg.src as u32) << 4);
+            send[i*4+2] = ((msg.dat[0] as u32) << 0) |
+                          ((msg.dat[1] as u32) << 8) |
+                          ((msg.dat[2] as u32) << 16) |
+                          ((msg.dat[3] as u32) << 24);
+            send[i*4+3] = ((msg.dat[4] as u32) << 0) |
+                          ((msg.dat[5] as u32) << 8) |
+                          ((msg.dat[6] as u32) << 16) |
+                          ((msg.dat[7] as u32) << 24);
+        }
+
+        let dat = unsafe {std::slice::from_raw_parts(send.as_ptr() as *const u8, send.len() * 4)};
+        self.device.write_bulk(Endpoint::CanWrite as u8, &dat, self.timeout)?;
+        Ok(())
     }
 
     fn usb_write(&self, request : Endpoint, value: u16, index : u16) -> Result<(), libusb::Error> {

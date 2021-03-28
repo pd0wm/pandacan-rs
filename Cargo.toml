@@ -13,3 +13,4 @@ bitflags = "1.2.1"
 [dev-dependencies]
 binascii = "0.1.4"
 termion = "1.5.6"
+clap = "2.33.3"

@@ -1,6 +1,8 @@
 extern crate libusb;
 extern crate termion;
 
+extern crate clap;
+use clap::{Arg, App};
 
 use std::time::Duration;
 use std::thread;
@@ -12,6 +14,22 @@ use std::str;
 
 
 fn main() {
+    let matches = App::new("CAN Printer")
+        .arg(Arg::with_name("bus")
+                .short("b")
+                .long("bus")
+                .takes_value(true)
+                .help("Bus to listen on"))
+        .get_matches();
+
+    let mut bus = 0;
+
+    if let Some(s) = matches.value_of("bus") {
+        if let Ok(n) = s.parse::<u8>() {
+            bus = n;
+        }
+    }
+
     let context = libusb::Context::new().unwrap();
     let panda = Panda::new(&context, Duration::from_millis(100));
     let fw = panda.get_fw_version().expect("Error getting fw version");
@@ -28,11 +46,12 @@ fn main() {
     loop {
         if let Ok(c) = panda.can_receive() {
             for msg in c {
-                if msg.src != 0 {
+                if msg.src != bus {
                     continue;
                 }
+
                 msgs.insert(msg.address, msg);
-                let mut cnt = counts.entry(msg.address).or_insert(0);
+                let cnt = counts.entry(msg.address).or_insert(0);
                 *cnt = *cnt + 1;
             }
         }
