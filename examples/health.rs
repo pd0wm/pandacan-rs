@@ -7,7 +7,8 @@ use panda::Panda;
 
 fn main() {
     let context = libusb::Context::new().unwrap();
-    let panda = Panda::new(&context);
+    let panda = Panda::new(&context, Duration::from_millis(100));
+
     loop {
         if let Ok(h) = panda.health() {
             println!("{:?}", h);
