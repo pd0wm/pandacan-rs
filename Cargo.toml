@@ -1,6 +1,6 @@
 [package]
 name = "pandacan"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Willem Melching <willem.melching@gmail.com>"]
 license = "MIT"
 edition = "2018"
