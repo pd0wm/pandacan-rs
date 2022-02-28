@@ -2,7 +2,7 @@ extern crate libusb;
 
 use std::time::Duration;
 
-use panda::{Panda, SafetyModel, UnsafeMode, HwType};
+use pandacan::{Panda, SafetyModel, UnsafeMode, HwType};
 
 #[test]
 fn safety_model() {
