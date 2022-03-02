@@ -102,7 +102,7 @@ pub enum SafetyModel {
 #[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum HwType {
-  Unkwown = 0x0,
+  Unknown = 0x0,
   WhitePanda = 0x1,
   GreyPanda = 0x2,
   BlackPanda = 0x3,
