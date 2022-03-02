@@ -89,7 +89,7 @@ pub enum SafetyModel {
     AllOutput = 17,
     GMAscm = 18,
     NoOutput = 19,
-    HondaBoschHarness = 20,
+    HondaBosch = 20,
     VolkswagenPq = 21,
     SubaryLegacy = 22,
     HyundaiLegacy = 23,
