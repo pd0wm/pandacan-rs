@@ -32,6 +32,7 @@ pub struct Health {
     pub safety_param: i16,
     pub fault_status: u8,
     pub power_save_enabled: u8,
+    pub heartbeat_lost: u8,
 }
 
 #[repr(C)]
@@ -64,6 +65,7 @@ enum Endpoint {
     PowerSaving = 0xe7,
     UsbPowerMode = 0xe6,
     Heartbeat = 0xf3,
+    HeartbeatDisabled = 0xf8,
     CanRead = 0x81,
     CanWrite = 0x3,
 }
@@ -89,7 +91,7 @@ pub enum SafetyModel {
     AllOutput = 17,
     GMAscm = 18,
     NoOutput = 19,
-    HondaBoschHarness = 20,
+    HondaBosch = 20,
     VolkswagenPq = 21,
     SubaryLegacy = 22,
     HyundaiLegacy = 23,
@@ -100,7 +102,7 @@ pub enum SafetyModel {
 #[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum HwType {
-  Unkwown = 0x0,
+  Unknown = 0x0,
   WhitePanda = 0x1,
   GreyPanda = 0x2,
   BlackPanda = 0x3,
@@ -192,6 +194,10 @@ impl<'a> Panda<'a>  {
 
     pub fn send_heartbeat(&self) -> Result<(), libusb::Error> {
         self.usb_write(Endpoint::Heartbeat, 1, 0)
+    }
+
+    pub fn set_heartbeat_disabled(&self) -> Result<(), libusb::Error> {
+        self.usb_write(Endpoint::HeartbeatDisabled, 0, 0)
     }
 
     pub fn get_fw_version(&self) -> Result<[u8; 128], libusb::Error> {
