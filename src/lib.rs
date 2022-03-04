@@ -11,6 +11,8 @@ pub struct Panda<'a> {
     timeout : Duration,
 }
 
+const HEALTH_VERSION: u8 = 3;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Health {
@@ -39,6 +41,13 @@ pub struct Health {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
+pub struct PacketVersions {
+    pub health_version: u8,
+    pub can_version: u8,
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct RtcTime {
     year: u16,
     month: u8,
@@ -62,6 +71,7 @@ enum Endpoint {
     FirmwareVersionLower = 0xd3,
     FirmwareVersionHigher = 0xd4,
     SafetyModel = 0xdc,
+    PacketVersions = 0xdd,
     UnsafeMode = 0xdf,
     Loopback = 0xe5,
     PowerSaving = 0xe7,
@@ -131,6 +141,8 @@ bitflags! {
     }
 }
 
+const CAN_VERSION: u8 = 1;
+
 #[derive(Debug, Copy, Clone)]
 pub struct CanMessage {
     pub address: u32,
@@ -164,6 +176,16 @@ impl<'a> Panda<'a>  {
 
     pub fn set_safety_model(&self, safety_model: SafetyModel, safety_param: u16) -> Result<(), libusb::Error> {
         self.usb_write(Endpoint::SafetyModel, safety_model as u16, safety_param)
+    }
+
+    pub fn get_packet_versions(&self) -> Result<PacketVersions, libusb::Error> {
+        const N : usize = mem::size_of::<PacketVersions>();
+
+        let mut buf : [u8; N] = [0; N];
+        let tp = libusb::request_type(libusb::Direction::In, libusb::RequestType::Vendor, libusb::Recipient::Device);
+        self.device.read_control(tp, Endpoint::PacketVersions as u8, 0, 0, &mut buf, self.timeout)?;
+
+        Ok(unsafe { std::mem::transmute(buf) })
     }
 
     pub fn set_unsafe_mode(&self, unsafe_mode: UnsafeMode) -> Result<(), libusb::Error> {
