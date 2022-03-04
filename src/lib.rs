@@ -34,6 +34,7 @@ pub struct Health {
     pub power_save_enabled: u8,
     pub heartbeat_lost: u8,
     pub unsafe_mode: u16,
+    pub blocked_msg_cnt: u32,
 }
 
 #[repr(C)]
