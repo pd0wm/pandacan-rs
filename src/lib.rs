@@ -33,6 +33,7 @@ pub struct Health {
     pub fault_status: u8,
     pub power_save_enabled: u8,
     pub heartbeat_lost: u8,
+    pub unsafe_mode: u16,
 }
 
 #[repr(C)]
