@@ -13,7 +13,10 @@ fn main() {
 
     let serial = panda.get_serial().expect("Error getting serial");
     println!("Serial: {:}", serial);
-  
+
+    let packet_versions = panda.get_packet_versions().expect("Error getting packet versions");
+    println!("Packet versions: {:?}", packet_versions);
+
 
     loop {
         if let Ok(h) = panda.health() {
