@@ -6,12 +6,13 @@ extern crate libusb;
 #[macro_use]
 extern crate bitflags;
 
-pub struct Panda<'a> {
-    device : libusb::DeviceHandle<'a>,
-    timeout : Duration,
-}
-
 const HEALTH_VERSION: u8 = 3;
+const CAN_VERSION: u8 = 1;
+
+pub struct Panda<'a> {
+    device: libusb::DeviceHandle<'a>,
+    timeout: Duration,
+}
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -141,7 +142,6 @@ bitflags! {
     }
 }
 
-const CAN_VERSION: u8 = 1;
 
 #[derive(Debug, Copy, Clone)]
 pub struct CanMessage {
