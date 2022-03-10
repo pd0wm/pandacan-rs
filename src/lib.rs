@@ -12,6 +12,7 @@ const CAN_VERSION: u8 = 1;
 pub struct Panda<'a> {
     device: libusb::DeviceHandle<'a>,
     timeout: Duration,
+    packet_versions: PacketVersions,
 }
 
 #[repr(C)]
@@ -154,17 +155,34 @@ pub struct CanMessage {
 
 
 
-impl<'a> Panda<'a>  {
-    pub fn new(context: &'a libusb::Context, timeout: Duration) -> Panda<'a>  {
-        let device = context.open_device_with_vid_pid(0xbbaa, 0xddcc).unwrap();
+impl PacketVersions {
+    pub fn new(device: &libusb::DeviceHandle, timeout: Duration) -> Self {
+        const N : usize = mem::size_of::<PacketVersions>();
 
-        Panda {
+        let mut buf : [u8; N] = [0; N];
+        let tp = libusb::request_type(libusb::Direction::In, libusb::RequestType::Vendor, libusb::Recipient::Device);
+        device.read_control(tp, Endpoint::PacketVersions as u8, 0, 0, &mut buf, timeout).unwrap();
+
+        unsafe { std::mem::transmute(buf) }
+    }
+}
+
+
+impl<'a> Panda<'a>  {
+    pub fn new(context: &'a libusb::Context, timeout: Duration) -> Self {
+        let device = context.open_device_with_vid_pid(0xbbaa, 0xddcc).unwrap();
+        let packet_versions = PacketVersions::new(&device, timeout);
+
+        Self {
             device,
-            timeout
+            timeout,
+            packet_versions,
         }
     }
 
     pub fn health(&self) -> Result<Health, libusb::Error> {
+        self.ensure_health_packet_version();
+
         const N : usize = mem::size_of::<Health>();
 
         let mut buf : [u8; N] = [0; N];
@@ -178,14 +196,8 @@ impl<'a> Panda<'a>  {
         self.usb_write(Endpoint::SafetyModel, safety_model as u16, safety_param)
     }
 
-    pub fn get_packet_versions(&self) -> Result<PacketVersions, libusb::Error> {
-        const N : usize = mem::size_of::<PacketVersions>();
-
-        let mut buf : [u8; N] = [0; N];
-        let tp = libusb::request_type(libusb::Direction::In, libusb::RequestType::Vendor, libusb::Recipient::Device);
-        self.device.read_control(tp, Endpoint::PacketVersions as u8, 0, 0, &mut buf, self.timeout)?;
-
-        Ok(unsafe { std::mem::transmute(buf) })
+    pub fn get_packet_versions(&self) -> PacketVersions {
+        self.packet_versions
     }
 
     pub fn set_unsafe_mode(&self, unsafe_mode: UnsafeMode) -> Result<(), libusb::Error> {
@@ -262,6 +274,8 @@ impl<'a> Panda<'a>  {
     }
     
     pub fn can_receive(&self) -> Result<Vec<CanMessage>, libusb::Error> {
+        self.ensure_can_packet_version();
+
         const N : usize = 0x1000;
         let mut buf : [u8; N] = [0; N];
         let recv : usize = self.device.read_bulk(Endpoint::CanRead as u8, &mut buf, self.timeout)?;
@@ -308,6 +322,8 @@ impl<'a> Panda<'a>  {
     }
 
     pub fn can_send(&self, can_data : Vec<CanMessage>) -> Result<(), libusb::Error> {
+        self.ensure_can_packet_version();
+
         let mut send: Vec<u32> = Vec::new();
         send.resize(can_data.len() * 0x10, 0);
 
@@ -347,6 +363,22 @@ impl<'a> Panda<'a>  {
         let tp = libusb::request_type(libusb::Direction::Out, libusb::RequestType::Vendor, libusb::Recipient::Device);
         self.device.write_control(tp, request as u8, value, index, &mut buf, self.timeout)?;
         Ok(unsafe { std::mem::transmute(buf) })
+    }
+
+    fn ensure_health_packet_version(&self) -> () {
+        if self.packet_versions.health_version > HEALTH_VERSION {
+            panic!("Library outdated! Panda health packet version is {}, but library version is {}", self.packet_versions.health_version, HEALTH_VERSION);
+        } else if self.packet_versions.health_version < HEALTH_VERSION {
+            panic!("Panda outdated! Panda health packet version is {}, but library version is {}", self.packet_versions.health_version, HEALTH_VERSION);
+        }
+    }
+
+    fn ensure_can_packet_version(&self) -> () {
+        if self.packet_versions.can_version > CAN_VERSION {
+            panic!("Library outdated! Panda CAN packet version is {}, but library version is {}", self.packet_versions.can_version, CAN_VERSION);
+        } else if self.packet_versions.can_version < CAN_VERSION {
+            panic!("Panda outdated! Panda CAN packet version is {}, but library version is {}", self.packet_versions.can_version, CAN_VERSION);
+        }
     }
 
 }

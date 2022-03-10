@@ -14,13 +14,14 @@ fn main() {
     let serial = panda.get_serial().expect("Error getting serial");
     println!("Serial: {:}", serial);
 
-    let packet_versions = panda.get_packet_versions().expect("Error getting packet versions");
+    let packet_versions = panda.get_packet_versions();
     println!("Packet versions: {:?}", packet_versions);
 
 
     loop {
-        if let Ok(h) = panda.health() {
-            println!("{:?}", h);
+        match panda.health() {
+            Ok(h) => println!("{:?}", h),
+            Err(e) => println!("Error: {}", e),
         }
         thread::sleep(Duration::from_millis(500));
     }
