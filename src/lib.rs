@@ -12,6 +12,7 @@ const CAN_VERSION: u8 = 1;
 pub struct Panda<'a> {
     device: libusb::DeviceHandle<'a>,
     timeout: Duration,
+    packet_versions: PacketVersions,
 }
 
 #[repr(C)]
@@ -154,13 +155,28 @@ pub struct CanMessage {
 
 
 
-impl<'a> Panda<'a>  {
-    pub fn new(context: &'a libusb::Context, timeout: Duration) -> Panda<'a>  {
-        let device = context.open_device_with_vid_pid(0xbbaa, 0xddcc).unwrap();
+impl PacketVersions {
+    pub fn new(device: &libusb::DeviceHandle, timeout: Duration) -> Self {
+        const N : usize = mem::size_of::<PacketVersions>();
 
-        Panda {
+        let mut buf : [u8; N] = [0; N];
+        let tp = libusb::request_type(libusb::Direction::In, libusb::RequestType::Vendor, libusb::Recipient::Device);
+        device.read_control(tp, Endpoint::PacketVersions as u8, 0, 0, &mut buf, timeout).unwrap();
+
+        unsafe { std::mem::transmute(buf) }
+    }
+}
+
+
+impl<'a> Panda<'a>  {
+    pub fn new(context: &'a libusb::Context, timeout: Duration) -> Self {
+        let device = context.open_device_with_vid_pid(0xbbaa, 0xddcc).unwrap();
+        let packet_versions = PacketVersions::new(&device, timeout);
+
+        Self {
             device,
-            timeout
+            timeout,
+            packet_versions,
         }
     }
 
@@ -178,14 +194,8 @@ impl<'a> Panda<'a>  {
         self.usb_write(Endpoint::SafetyModel, safety_model as u16, safety_param)
     }
 
-    pub fn get_packet_versions(&self) -> Result<PacketVersions, libusb::Error> {
-        const N : usize = mem::size_of::<PacketVersions>();
-
-        let mut buf : [u8; N] = [0; N];
-        let tp = libusb::request_type(libusb::Direction::In, libusb::RequestType::Vendor, libusb::Recipient::Device);
-        self.device.read_control(tp, Endpoint::PacketVersions as u8, 0, 0, &mut buf, self.timeout)?;
-
-        Ok(unsafe { std::mem::transmute(buf) })
+    pub fn get_packet_versions(&self) -> PacketVersions {
+        self.packet_versions
     }
 
     pub fn set_unsafe_mode(&self, unsafe_mode: UnsafeMode) -> Result<(), libusb::Error> {
